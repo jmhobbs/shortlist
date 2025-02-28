@@ -1,0 +1,16 @@
+{
+  "name": "shortlist",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron ."
+  },
+  "keywords": [],
+  "author": "John Hobbs <john@velvetcache.org>",
+  "license": "MIT",
+  "description": "Electron app to keep a short todo list in your menu bar",
+  "devDependencies": {
+    "electron": "^34.3.0"
+  }
+}

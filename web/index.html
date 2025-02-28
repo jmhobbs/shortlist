@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'"> -->
+    <title>Shortlist</title>
+<style>
+  * {
+    font-family: 'Source Code Pro', monospace;
+  }
+  ol {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+  }
+  li {
+    cursor: grab;
+    padding: 0.5em 0.75em;
+    margin: 0.5em 0;
+    background: whitesmoke;
+  }
+  li button {
+    float: right;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+  li#new {
+    position: relative;
+    cursor: text;
+  }
+  li#new span {
+    position: absolute;
+    color: #888;
+  }
+  .dragging {
+    opacity: 0.75;
+  }
+  footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-top: 1px solid #888;
+    background: #CCC;
+    padding: 10px;
+    text-align: right;
+  }
+  footer button {
+    padding: 10px 15px;
+    border-radius: 10px;
+    font-weight: bold;
+  }
+  #save {
+    background: #0464ff; 
+    color: white;
+  }
+</style>
+  </head>
+  <body>
+    <ol>
+      <li id="new"><span>New Item</span><div contenteditable="true"></div></li>
+    </ol>
+    <footer>
+      <button id="save">Done</button>
+    </footer>
+    <script>
+      window.electron = window.electron || {
+        sync: (items) => {
+          console.log('ipc sync:', items);
+        },
+        close: () => {
+          console.log('ipc close');
+        },
+        next: (cb) => {
+          console.log('ipc next');
+          window.electron.nextCb = cb;
+        },
+        setShortlist: (cb) => {
+          console.log('ipc setShortlist');
+          window.electron.setShortlistCb = cb;
+        }
+      };
+
+      const list = document.querySelector('ol');
+      let dragging = null;
+
+      function makeListItem(text) {
+        const item = document.createElement('li');
+        item.draggable = true;
+        const button = document.createElement('button');
+        button.innerText = '🗑';
+        item.appendChild(button);
+
+        const div = document.createElement('div');
+        div.contentEditable = true;
+        div.innerText = text;
+        item.appendChild(div);
+
+        return item;
+      }
+
+      function maybeInsertNewItem(evt) {
+        if(evt.target.innerText === '') {
+          return false;
+        }
+        list.insertBefore(
+          makeListItem(evt.target.innerText),
+          list.querySelector('#new').nextSibling
+        );
+        evt.target.innerHTML = '';
+        return true;
+      }
+
+      document.querySelector("#new div").addEventListener('keypress', (evt) => {
+        if(evt.key === 'Enter') {
+          evt.preventDefault();
+          evt.target.blur();
+        }
+      });
+      document.querySelector("#new div").addEventListener('focusin', (evt) => {
+        document.querySelector("#new span").style.display = 'none';
+      });
+      document.querySelector("#new div").addEventListener('keydown', (evt) => {
+        if(evt.key === 'Escape') {
+          evt.preventDefault();
+          evt.target.innerHTML = '';
+          evt.target.blur();
+        }
+      });
+      document.querySelector("#new div").addEventListener('focusout', (evt) => {
+        maybeInsertNewItem(evt) && sync();
+        document.querySelector("#new span").style.display = 'inline-block';
+      });
+
+      function sync() {
+        const items = [...list.querySelectorAll("li:not(#new) > div")].map(item => item.innerText);
+        window.electron.sync(items);
+      }
+
+      list.addEventListener('click', (evt) => {
+        if(evt.target.tagName === 'BUTTON') {
+          evt.preventDefault();
+          evt.target.parentElement.remove();
+          sync();
+        }
+      });
+
+      list.addEventListener('focusout', (evt) => {
+        // no sync if we are clicking the button, exiting the new item, or mid-drag
+        if(
+          evt.target.tagName !== 'DIV' ||
+          evt.target.parentElement.id === "new" ||
+          evt.target.classList.contains('dragging')
+        ) {
+          return;
+        }
+        sync();
+      });
+
+      list.addEventListener('dragstart', event => {
+        dragging = event.target;
+        event.target.classList.add('dragging');
+      });
+
+      list.addEventListener('dragend', event => {
+        dragging.classList.remove('dragging');
+        dragging = null
+        sync();
+      });
+
+      list.addEventListener('dragover', event => {
+        event.preventDefault();
+        const afterElement = getDragAfterElement(list, event.clientY);
+        const currentElement = document.querySelector('.dragging');
+        if (afterElement == null) {
+          list.appendChild(currentElement);
+        } else {
+          list.insertBefore(currentElement, afterElement);
+        }
+      });
+
+      function getDragAfterElement(list, y) {
+        const draggableElements = [...list.querySelectorAll('[draggable="true"]:not(.dragging)')];
+        return draggableElements.reduce((closest, child) => {
+          const box = child.getBoundingClientRect();
+          const offset = y - box.top - box.height / 2;
+          if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+          } else {
+            return closest;
+          }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+      }
+
+      document.getElementById('save').addEventListener('click', () => {
+        window.electron.close();
+      });
+
+      window.electron.setShortlist((items) => {
+        items.reverse().forEach((item) => {
+          list.insertBefore(makeListItem(item), list.querySelector('#new').nextSibling);
+        });
+      });
+
+      window.electron.next(() => {
+        const button = list.querySelector("li:nth-child(2) button");
+        if(button) { button.click(); }
+      });
+    </script>
+  </body>
+</html>
