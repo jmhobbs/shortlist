@@ -16,8 +16,8 @@ try {
 }
 
 function icon(shortlist) {
-  if(shortlist.length == 0) { return './assets/CheckTemplate.png'; }
-  return './assets/LinesTemplate.png';
+  if(shortlist.length == 0) { return path.join(app.getAppPath(), 'assets/CheckTemplate.png'); }
+  return path.join(app.getAppPath(), 'assets/LinesTemplate.png');
 }
 
 function title(list) {
@@ -57,7 +57,7 @@ app.whenReady().then(() => {
     }
   })
 
-  win.loadFile('./web/index.html').then(
+  win.loadFile(path.join(app.getAppPath(), 'web/index.html')).then(
     () => {
       win.webContents.send('set-shortlist', shortlist);
     }
