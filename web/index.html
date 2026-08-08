@@ -151,11 +151,33 @@
         window.electron.sync(items);
       }
 
+      function placeCaretAtEnd(el) {
+        el.focus();
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        range.collapse(false);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+
       list.addEventListener('click', (evt) => {
         if(evt.target.tagName === 'BUTTON') {
           evt.preventDefault();
           evt.target.parentElement.remove();
           sync();
+          return;
+        }
+        if(evt.target.tagName === 'IMG') {
+          return;
+        }
+        const li = evt.target.closest('li');
+        if(!li) {
+          return;
+        }
+        const div = li.querySelector('div');
+        if(evt.target !== div) {
+          placeCaretAtEnd(div);
         }
       });
 
