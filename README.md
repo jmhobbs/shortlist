@@ -1,15 +1,13 @@
-> [!WARNING]
-> This project is early days. The code is messy and it's not packaged yet, so be careful.
-
 # Shortlist
 
 Shortlist is a menu bar / tray app designed for your short todo list.
 
 It shows one thing at a time, so you can be reminded of that and only that!
 
-![Demo Screenshot](https://raw.githubusercontent.com/jmhobbs/shortlist/refs/heads/main/.github/readme/demo.png)
+![Menu Bar Screenshot](https://raw.githubusercontent.com/jmhobbs/shortlist/refs/heads/main/.github/readme/menu-bar.png)
+![Application Screenshot](https://raw.githubusercontent.com/jmhobbs/shortlist/refs/heads/main/.github/readme/demo.png)
 
-[Watch a demo](https://youtu.be/_e7tgGJRK8M)
+[Watch a demo - v0.0.1](https://youtu.be/_e7tgGJRK8M)
 
 # Running
 
