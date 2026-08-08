@@ -60,6 +60,7 @@ app.whenReady().then(() => {
   win.loadFile(path.join(app.getAppPath(), 'web/index.html')).then(
     () => {
       win.webContents.send('set-shortlist', shortlist);
+      win.webContents.send('set-version', app.getVersion());
     }
   );
 

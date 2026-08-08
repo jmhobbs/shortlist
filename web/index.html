@@ -63,12 +63,28 @@
     margin-left: 0;
     margin-right: 0;
   }
+  footer {
+    margin-top: 0.5em;
+    color: #aaa;
+    font-size: 0.75em;
+    text-align: right;
+  }
+  footer a {
+    color: #aaa;
+    text-decoration: none;
+  }
+  footer a:hover {
+    text-decoration: underline;
+  }
 </style>
   </head>
   <body>
     <ol>
       <li id="new"><span>New Item</span><div contenteditable="true"></div></li>
     </ol>
+    <footer>
+      <a href="https://github.com/jmhobbs/shortlist" target="_blank">Shortlist <span id="version"></span></a>
+    </footer>
     <script>
       window.electron = window.electron || {
         sync: (items) => {
@@ -84,6 +100,10 @@
         setShortlist: (cb) => {
           console.log('ipc setShortlist');
           window.electron.setShortlistCb = cb;
+        },
+        setVersion: (cb) => {
+          console.log('ipc setVersion');
+          window.electron.setVersionCb = cb;
         }
       };
 
@@ -248,6 +268,10 @@
       window.electron.next(() => {
         const button = list.querySelector("li:nth-child(2) button");
         if(button) { button.click(); }
+      });
+
+      window.electron.setVersion((version) => {
+        document.querySelector('#version').innerText = `v${version}`;
       });
     </script>
   </body>
