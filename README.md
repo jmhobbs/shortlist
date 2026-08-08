@@ -23,3 +23,7 @@ To run from source;
 - Run `npm install`
 - Run `npm start`
 - File bugs!
+
+# Thanks
+
+- Drag handle icon by [Gabriele Malaspina](https://www.figma.com/@gabriele)

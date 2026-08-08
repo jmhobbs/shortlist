@@ -15,10 +15,15 @@
     margin: 0;
   }
   li {
-    cursor: grab;
     padding: 0.5em 0.75em;
     margin: 0.5em 0;
     background: whitesmoke;
+  }
+  .drop-indicator {
+    height: 3px;
+    margin: 0.5em 0;
+    background: #0464ff;
+    border-radius: 2px;
   }
   li button {
     float: right;
@@ -37,24 +42,26 @@
   .dragging {
     opacity: 0.75;
   }
-  footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    border-top: 1px solid #888;
-    background: #CCC;
-    padding: 10px;
-    text-align: right;
+  /* drag handle */
+  li img {
+    width: 20px;
+    height: 20px;
+    float: left;
+    margin-right: 10px;
+    cursor: grab;
   }
-  footer button {
-    padding: 10px 15px;
-    border-radius: 10px;
-    font-weight: bold;
+  li img:active {
+    cursor: grabbing;
   }
-  #save {
-    background: #0464ff; 
-    color: white;
+  /* editable area */
+  li div {
+    margin-left: 30px;
+    margin-right: 30px;
+    cursor: text;
+  }
+  li#new div {
+    margin-left: 0;
+    margin-right: 0;
   }
 </style>
   </head>
@@ -62,9 +69,6 @@
     <ol>
       <li id="new"><span>New Item</span><div contenteditable="true"></div></li>
     </ol>
-    <footer>
-      <button id="save">Done</button>
-    </footer>
     <script>
       window.electron = window.electron || {
         sync: (items) => {
@@ -85,10 +89,18 @@
 
       const list = document.querySelector('ol');
       let dragging = null;
+      let originalNextSibling = null;
+      const dropIndicator = document.createElement('div');
+      dropIndicator.className = 'drop-indicator';
 
       function makeListItem(text) {
         const item = document.createElement('li');
-        item.draggable = true;
+
+        const handle = document.createElement('img');
+        handle.src = 'handle.svg';
+        handle.draggable = true;
+        item.appendChild(handle);
+
         const button = document.createElement('button');
         button.innerText = '🗑';
         item.appendChild(button);
@@ -152,7 +164,7 @@
         if(
           evt.target.tagName !== 'DIV' ||
           evt.target.parentElement.id === "new" ||
-          evt.target.classList.contains('dragging')
+          evt.target.parentElement.classList.contains('dragging')
         ) {
           return;
         }
@@ -160,29 +172,40 @@
       });
 
       list.addEventListener('dragstart', event => {
-        dragging = event.target;
-        event.target.classList.add('dragging');
+        dragging = event.target.parentElement;
+        dragging.classList.add('dragging');
+        originalNextSibling = dragging.nextElementSibling;
+        const rect = dragging.getBoundingClientRect();
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setDragImage(dragging, event.clientX - rect.left, event.clientY - rect.top);
+        list.insertBefore(dropIndicator, originalNextSibling);
       });
 
       list.addEventListener('dragend', event => {
+        if (dropIndicator.parentElement) {
+          list.insertBefore(dragging, dropIndicator);
+          dropIndicator.remove();
+        }
         dragging.classList.remove('dragging');
         dragging = null
+        originalNextSibling = null;
         sync();
       });
 
       list.addEventListener('dragover', event => {
         event.preventDefault();
         const afterElement = getDragAfterElement(list, event.clientY);
-        const currentElement = document.querySelector('.dragging');
-        if (afterElement == null) {
-          list.appendChild(currentElement);
+        if (afterElement === originalNextSibling) {
+          dropIndicator.remove();
+        } else if (afterElement == null) {
+          list.appendChild(dropIndicator);
         } else {
-          list.insertBefore(currentElement, afterElement);
+          list.insertBefore(dropIndicator, afterElement);
         }
       });
 
       function getDragAfterElement(list, y) {
-        const draggableElements = [...list.querySelectorAll('[draggable="true"]:not(.dragging)')];
+        const draggableElements = [...list.querySelectorAll('li:not(#new):not(.dragging)')];
         return draggableElements.reduce((closest, child) => {
           const box = child.getBoundingClientRect();
           const offset = y - box.top - box.height / 2;
@@ -193,10 +216,6 @@
           }
         }, { offset: Number.NEGATIVE_INFINITY }).element;
       }
-
-      document.getElementById('save').addEventListener('click', () => {
-        window.electron.close();
-      });
 
       window.electron.setShortlist((items) => {
         items.reverse().forEach((item) => {
